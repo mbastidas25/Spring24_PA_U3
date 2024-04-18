@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>CPSC 487/587</title>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lil-gui@0.19.1/dist/lil-gui.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/10.3.0/math.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/quaternion@1.5.1/quaternion.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/numeric@1.2.6/numeric-1.2.6.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stats.js@0.17.0/build/stats.min.js"></script>
+    <script type="importmap">
+        {
+            "imports": {
+              "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+              "three/": "https://unpkg.com/three@0.160.0/"
+            }
+        }
+    </script>
+</head>
+<body>
+<script type="module">
+    import {ThreeEngine} from "../js/utils/utils_three.js";
+
+    // todo: create a visualization that demonstrates your knowledge of displacement-based
+    // todo: distance over SE(3).  Note that this will use your logarithm solution from PS_U3,
+    // todo: so you must finish that prior to starting this problem.
+    // todo: Feel free to make this visualization as creative as you want, or, conversely,
+    // todo: feel free to create a visualization like the one here
+    // todo: https://yale-cpsc-487-587-internal-djrakita-c95fa6c3239a481a48d29a6b0fd.gitlab.io/html/visualizations/SE2_distance2.html
+    // todo: though applied to 3D rotations + translations instead of 2D rotations + translations.
+    // todo: Feel free to use the 3x3 matrix inverse function provided by me below if you want.
+
+    // A must be a 3x3 matrix in row major order
+    // [[a11, a12, a13], [a21, a22, a23], [a31, a32, a33]]
+    function matrix_inverse_3x3(A) {
+        let det = A[0][0] * (A[1][1] * A[2][2] - A[2][1] * A[1][2]) -
+            A[0][1] * (A[1][0] * A[2][2] - A[1][2] * A[2][0]) +
+            A[0][2] * (A[1][0] * A[2][1] - A[1][1] * A[2][0]);
+
+        if (det === 0) {
+            return null; // No inverse exists if determinant is 0
+        }
+
+        let cofactors = [
+            [
+                (A[1][1] * A[2][2] - A[2][1] * A[1][2]),
+                -(A[1][0] * A[2][2] - A[1][2] * A[2][0]),
+                (A[1][0] * A[2][1] - A[2][0] * A[1][1])
+            ],
+            [
+                -(A[0][1] * A[2][2] - A[0][2] * A[2][1]),
+                (A[0][0] * A[2][2] - A[0][2] * A[2][0]),
+                -(A[0][0] * A[2][1] - A[2][0] * A[0][1])
+            ],
+            [
+                (A[0][1] * A[1][2] - A[0][2] * A[1][1]),
+                -(A[0][0] * A[1][2] - A[1][0] * A[0][2]),
+                (A[0][0] * A[1][1] - A[1][0] * A[0][1])
+            ]
+        ];
+
+        let adjugate = [
+            [cofactors[0][0] / det, cofactors[1][0] / det, cofactors[2][0] / det],
+            [cofactors[0][1] / det, cofactors[1][1] / det, cofactors[2][1] / det],
+            [cofactors[0][2] / det, cofactors[1][2] / det, cofactors[2][2] / det]
+        ];
+
+        return adjugate;
+    }
+
+    let engine = ThreeEngine.new_default_3d(); // Initialize a 3D engine instead of 2D
+
+    let settings1 = {
+        theta1: 0, // Euler angles for rotation (X-axis)
+        theta2: 0, // Euler angles for rotation (Y-axis)
+        theta3: 0, // Euler angles for rotation (Z-axis)
+        translation_x1: 0,
+        translation_y1: 0,
+        translation_z1: 0,
+        displacement: 0, // To display the displacement in the GUI
+    };
+
+    let settings2 = {
+        theta1: 0, // Euler angles for rotation (X-axis)
+        theta2: 0, // Euler angles for rotation (Y-axis)
+        theta3: 0, // Euler angles for rotation (Z-axis)
+        translation_x2: 0,
+        translation_y2: 0,
+        translation_z2: 0
+    };
+
+    let gui = get_default_lil_gui();
+
+    // Settings for the first pair of transformations
+    gui.add(settings1, 'theta1', -Math.PI, Math.PI).name('Rotation angle 1 (X-axis)');
+    gui.add(settings1, 'theta2', -Math.PI, Math.PI).name('Rotation angle 2 (Y-axis)');
+    gui.add(settings1, 'theta3', -Math.PI, Math.PI).name('Rotation angle 3 (Z-axis)');
+    gui.add(settings1, 'translation_x1', -2, 2).name('Translate X 1');
+    gui.add(settings1, 'translation_y1', -2, 2).name('Translate Y 1');
+    gui.add(settings1, 'translation_z1', -2, 2).name('Translate Z 1');
+    gui.add(settings1, 'displacement').name('Displacement').listen();
+
+    // Settings for the second pair of transformations
+    gui.add(settings2, 'theta1', -Math.PI, Math.PI).name('Rotation angle 1 (X-axis)');
+    gui.add(settings2, 'theta2', -Math.PI, Math.PI).name('Rotation angle 2 (Y-axis)');
+    gui.add(settings2, 'theta3', -Math.PI, Math.PI).name('Rotation angle 3 (Z-axis)');
+    gui.add(settings2, 'translation_x2', -2, 2).name('Translate X 2');
+    gui.add(settings2, 'translation_y2', -2, 2).name('Translate Y 2');
+    gui.add(settings2, 'translation_z2', -2, 2).name('Translate Z 2');
+
+
+
+    let translation_matrix = [
+        [1, 0, 0, settings.translation_x],
+        [0, 1, 0, settings.translation_y],
+        [0, 0, 1, settings.translation_z],
+        [0, 0, 0, 1]  // This row makes it a proper homogeneous transformation matrix
+    ];
+
+
+    let theta1 = settings.theta1; // Rotation around the X-axis
+    let theta2 = settings.theta2; // Rotation around the Y-axis
+    let theta3 = settings.theta3; // Rotation around the Z-axis
+
+    let rotation_matrix = [
+        [
+            Math.cos(theta2) * Math.cos(theta3),
+            -Math.cos(theta2) * Math.sin(theta3),
+            Math.sin(theta2)
+        ],
+        [
+            Math.cos(theta3) * Math.sin(theta1) * Math.sin(theta2) + Math.cos(theta1) * Math.sin(theta3),
+            Math.cos(theta1) * Math.cos(theta3) - Math.sin(theta1) * Math.sin(theta2) * Math.sin(theta3),
+            -Math.cos(theta2) * Math.sin(theta1)
+        ],
+        [
+            -Math.cos(theta1) * Math.cos(theta3) * Math.sin(theta2) + Math.sin(theta1) * Math.sin(theta3),
+            Math.cos(theta3) * Math.sin(theta1) + Math.cos(theta1) * Math.sin(theta2) * Math.sin(theta3),
+            Math.cos(theta1) * Math.cos(theta2)
+        ]
+    ];
+
+
+
+</script>
+</body>
+</html>

@@ -69,77 +69,49 @@
         return adjugate;
     }
 
-    let engine = ThreeEngine.new_default_3d(); // Initialize a 3D engine instead of 2D
+    let engine = ThreeEngine.new_default_2d();
 
-    let settings1 = {
-        theta1: 0, // Euler angles for rotation (X-axis)
-        theta2: 0, // Euler angles for rotation (Y-axis)
-        theta3: 0, // Euler angles for rotation (Z-axis)
-        translation_x1: 0,
-        translation_y1: 0,
-        translation_z1: 0,
-        displacement: 0, // To display the displacement in the GUI
-    };
+    let actions = {
+        reset1: () => {
+            settings.theta1 = 0;
+            settings.tx1 = 0;
+            settings.ty1 = 0;
+            refresh_displays(gui);
+        },
+        reset2: () => {
+            settings.theta2 = 0;
+            settings.tx2 = 0;
+            settings.ty2 = 0;
+            refresh_displays(gui);
+        }
+    }
 
-    let settings2 = {
-        theta1: 0, // Euler angles for rotation (X-axis)
-        theta2: 0, // Euler angles for rotation (Y-axis)
-        theta3: 0, // Euler angles for rotation (Z-axis)
-        translation_x2: 0,
-        translation_y2: 0,
-        translation_z2: 0
+    let settings = {
+        theta1: 0,
+        tx1:0,
+        ty1:0,
+        theta2: 0,
+        tx2:0,
+        ty2:0,
+        distance: '0'
     };
 
     let gui = get_default_lil_gui();
+    gui.add(settings, 'theta1', -6.28, 6.28).name('Theta1');
+    gui.add(settings, 'tx1', -2, 2).name('tx1');
+    gui.add(settings, 'ty1', -2, 2).name('ty1');
+    gui.add(actions, 'reset1');
+    gui.add(settings, 'theta2', -6.28, 6.28).name('Theta2');
+    gui.add(settings, 'tx2', -2, 2).name('tx2');
+    gui.add(settings, 'ty2', -2, 2).name('ty2');
+    gui.add(actions, 'reset2');
+    gui.add(settings, 'distance').name('disp based dis').disable();
 
-    // Settings for the first pair of transformations
-    gui.add(settings1, 'theta1', -Math.PI, Math.PI).name('Rotation angle 1 (X-axis)');
-    gui.add(settings1, 'theta2', -Math.PI, Math.PI).name('Rotation angle 2 (Y-axis)');
-    gui.add(settings1, 'theta3', -Math.PI, Math.PI).name('Rotation angle 3 (Z-axis)');
-    gui.add(settings1, 'translation_x1', -2, 2).name('Translate X 1');
-    gui.add(settings1, 'translation_y1', -2, 2).name('Translate Y 1');
-    gui.add(settings1, 'translation_z1', -2, 2).name('Translate Z 1');
-    gui.add(settings1, 'displacement').name('Displacement').listen();
+    let x = [[1], [0], [0]];
+    let y = [[0], [1], [0]];
+    let z = [[0], [0], [1]];
 
-    // Settings for the second pair of transformations
-    gui.add(settings2, 'theta1', -Math.PI, Math.PI).name('Rotation angle 1 (X-axis)');
-    gui.add(settings2, 'theta2', -Math.PI, Math.PI).name('Rotation angle 2 (Y-axis)');
-    gui.add(settings2, 'theta3', -Math.PI, Math.PI).name('Rotation angle 3 (Z-axis)');
-    gui.add(settings2, 'translation_x2', -2, 2).name('Translate X 2');
-    gui.add(settings2, 'translation_y2', -2, 2).name('Translate Y 2');
-    gui.add(settings2, 'translation_z2', -2, 2).name('Translate Z 2');
-
-
-
-    let translation_matrix = [
-        [1, 0, 0, settings.translation_x],
-        [0, 1, 0, settings.translation_y],
-        [0, 0, 1, settings.translation_z],
-        [0, 0, 0, 1]  // This row makes it a proper homogeneous transformation matrix
-    ];
-
-
-    let theta1 = settings.theta1; // Rotation around the X-axis
-    let theta2 = settings.theta2; // Rotation around the Y-axis
-    let theta3 = settings.theta3; // Rotation around the Z-axis
-
-    let rotation_matrix = [
-        [
-            Math.cos(theta2) * Math.cos(theta3),
-            -Math.cos(theta2) * Math.sin(theta3),
-            Math.sin(theta2)
-        ],
-        [
-            Math.cos(theta3) * Math.sin(theta1) * Math.sin(theta2) + Math.cos(theta1) * Math.sin(theta3),
-            Math.cos(theta1) * Math.cos(theta3) - Math.sin(theta1) * Math.sin(theta2) * Math.sin(theta3),
-            -Math.cos(theta2) * Math.sin(theta1)
-        ],
-        [
-            -Math.cos(theta1) * Math.cos(theta3) * Math.sin(theta2) + Math.sin(theta1) * Math.sin(theta3),
-            Math.cos(theta3) * Math.sin(theta1) + Math.cos(theta1) * Math.sin(theta2) * Math.sin(theta3),
-            Math.cos(theta1) * Math.cos(theta2)
-        ]
-    ];
+    
 
 
 
